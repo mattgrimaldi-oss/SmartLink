@@ -6,7 +6,9 @@ import { getAuthUrl, handleAuthCallback, isAuthenticated, searchCalendarForLinke
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const REDIRECT_URI = `http://localhost:${PORT}/auth/google/callback`;
+const REDIRECT_URI = process.env.RAILWAY_PUBLIC_DOMAIN
+  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/auth/google/callback`
+  : `http://localhost:${PORT}/auth/google/callback`;
 
 app.use(cors({
   origin: (origin, callback) => {

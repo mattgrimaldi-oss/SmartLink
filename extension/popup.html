@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartLink</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 280px;
+      font-family: "Google Sans", Roboto, sans-serif;
+      font-size: 14px;
+      color: #202124;
+      background: #fff;
+    }
+    .header {
+      background: #1a73e8;
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header svg { flex-shrink: 0; }
+    .header-title { font-size: 16px; font-weight: 600; }
+    .header-sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    .body { padding: 16px; }
+    .shortcut-box {
+      background: #f1f3f4;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .shortcut-box p { font-size: 12px; color: #5f6368; margin-bottom: 6px; }
+    .shortcut-box .keys { font-size: 13px; font-weight: 600; color: #202124; }
+    .shortcut-box .keys kbd {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    .status-row:last-child { border-bottom: none; }
+    .status-label { color: #5f6368; font-size: 12px; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #dadce0;
+    }
+    .status-dot.green { background: #1e8e3e; }
+    .status-dot.red { background: #d93025; }
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid #f1f3f4;
+      display: flex;
+      justify-content: flex-end;
+    }
+    a.settings-link {
+      font-size: 12px;
+      color: #1a73e8;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    a.settings-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="header-title">SmartLink</div>
+      <div class="header-sub">LinkedIn auto-linker for recruiters</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="shortcut-box">
+      <p>Highlight a name in Gmail, then press:</p>
+      <div class="keys">
+        <kbd id="shortcut-key">⌘+Shift+L</kbd> to link their LinkedIn
+      </div>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Greenhouse</span>
+      <div class="status-dot" id="gh-dot"></div>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Slack</span>
+      <div class="status-dot" id="slack-dot"></div>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Backend</span>
+      <div class="status-dot" id="backend-dot"></div>
+    </div>
+  </div>
+  <div class="footer">
+    <a class="settings-link" id="open-options">Configure API keys →</a>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

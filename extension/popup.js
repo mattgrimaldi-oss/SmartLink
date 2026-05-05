@@ -12,7 +12,7 @@ async function checkStatus() {
     "slackToken",
   ]);
 
-  const url = backendUrl || "http://localhost:3000";
+  const url = backendUrl || "https://smartlink-production-6c66.up.railway.app";
 
   const ghDot = document.getElementById("gh-dot");
   const slackDot = document.getElementById("slack-dot");

@@ -1,5 +1,5 @@
 (() => {
-  const BACKEND_URL = "http://localhost:3000";
+  const BACKEND_URL = "https://smartlink-production-6c66.up.railway.app";
 
   function getSelectedText() {
     const selection = window.getSelection();

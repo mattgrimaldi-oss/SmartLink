@@ -13,12 +13,16 @@ function getCredentials() {
 }
 
 function loadTokens() {
+  if (process.env.GOOGLE_TOKENS) {
+    try { return JSON.parse(process.env.GOOGLE_TOKENS); } catch { return null; }
+  }
   if (!existsSync(TOKENS_FILE)) return null;
   try { return JSON.parse(readFileSync(TOKENS_FILE, "utf8")); } catch { return null; }
 }
 
 function saveTokens(tokens) {
-  writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+  process.env.GOOGLE_TOKENS = JSON.stringify(tokens);
+  try { writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2)); } catch { }
 }
 
 async function refreshAccessToken(refreshToken) {

@@ -50,8 +50,10 @@ export async function getAccessToken() {
 
 function extractLinkedIn(text) {
   if (!text) return null;
-  const match = text.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[^\s\n\r"'<>]+/i);
-  return match ? match[0].replace(/[.,;)]+$/, "") : null;
+  const match = text.match(/(https?:\/\/)?(www\.)?linkedin\.com\/in\/[^\s\n\r"'<>]+/i);
+  if (!match) return null;
+  const url = match[0].replace(/[.,;)]+$/, "");
+  return url.startsWith("http") ? url : `https://${url}`;
 }
 
 export function getAuthUrl(redirectUri) {

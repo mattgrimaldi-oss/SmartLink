@@ -12,7 +12,7 @@ const REDIRECT_URI = process.env.RAILWAY_PUBLIC_DOMAIN
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin.startsWith("chrome-extension://") || origin === "https://mail.google.com" || origin === "https://app.slack.com") {
+    if (!origin || origin.startsWith("chrome-extension://") || origin === "https://mail.google.com" || origin === "https://app.slack.com" || origin === "https://docs.google.com") {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));

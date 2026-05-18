@@ -9,14 +9,16 @@
   ],
   "host_permissions": [
     "https://mail.google.com/*",
-    "https://app.slack.com/*"
+    "https://app.slack.com/*",
+    "https://docs.google.com/*",
+    "https://smartlink-production-6c66.up.railway.app/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://mail.google.com/*", "https://app.slack.com/*"],
+      "matches": ["https://mail.google.com/*", "https://app.slack.com/*", "https://docs.google.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
@@ -25,7 +27,7 @@
     "smartlink-trigger": {
       "suggested_key": {
         "default": "Ctrl+Shift+L",
-        "mac": "Command+Shift+L"
+        "mac": "Command+L"
       },
       "description": "Link highlighted name to their LinkedIn profile"
     }

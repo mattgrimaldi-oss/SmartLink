@@ -1,5 +1,5 @@
 const isMac = navigator.platform.toUpperCase().includes("MAC");
-document.getElementById("shortcut-key").textContent = isMac ? "⌘+Shift+L" : "Ctrl+Shift+L";
+document.getElementById("shortcut-key").textContent = isMac ? "⌘+L" : "Ctrl+Shift+L";
 
 document.getElementById("open-options").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
@@ -12,7 +12,8 @@ async function checkStatus() {
     "slackToken",
   ]);
 
-  const url = backendUrl || "https://smartlink-production-6c66.up.railway.app";
+  const stale = backendUrl && backendUrl.includes("smartlink-production-6c66.up.railway.app");
+  const url = backendUrl && !stale ? backendUrl : "https://smartlink-backend-flip-cx.vercel.app";
 
   const ghDot = document.getElementById("gh-dot");
   const slackDot = document.getElementById("slack-dot");

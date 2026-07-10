@@ -11,7 +11,7 @@
     "https://mail.google.com/*",
     "https://app.slack.com/*",
     "https://docs.google.com/*",
-    "https://smartlink-production-6c66.up.railway.app/*"
+    "https://smartlink-backend-flip-cx.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"

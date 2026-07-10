@@ -1,5 +1,6 @@
 (() => {
-  const BACKEND_URL = "https://smartlink-production-6c66.up.railway.app";
+  const BACKEND_URL = "https://smartlink-backend-flip-cx.vercel.app";
+  const OLD_BACKEND_HOSTS = ["smartlink-production-6c66.up.railway.app"];
 
   function getSelectedText() {
     const selection = window.getSelection();
@@ -109,16 +110,16 @@
   async function getBackendUrl() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(["backendUrl"], (result) => {
-        resolve(result.backendUrl || BACKEND_URL);
+        const stored = result.backendUrl;
+        const isStale = stored && OLD_BACKEND_HOSTS.some((h) => stored.includes(h));
+        resolve(stored && stored.startsWith("https://") && !isStale ? stored : BACKEND_URL);
       });
     });
   }
 
   async function lookupLinkedIn(name) {
     const url = await getBackendUrl();
-    const res = await fetch(`${url}/lookup?name=${encodeURIComponent(name)}`, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const res = await fetch(`${url}/lookup?name=${encodeURIComponent(name)}`);
     if (!res.ok) throw new Error(`Backend error: ${res.status}`);
     return res.json();
   }
@@ -158,7 +159,10 @@
     try {
       results = await lookupLinkedIn(text);
     } catch (err) {
-      showToast("Could not reach SmartLink backend. Is it running?", "error");
+      const msg = err.message?.includes("<!DOCTYPE") || err.message?.includes("token '<'")
+        ? "Backend returned an error page — check Railway logs."
+        : "Could not reach SmartLink backend. Is it running?";
+      showToast(msg, "error");
       console.error("[SmartLink]", err);
       return;
     }

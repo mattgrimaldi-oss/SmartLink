@@ -2,11 +2,14 @@
   const BACKEND_URL = "https://smartlink-backend-flip-cx.vercel.app";
   const OLD_BACKEND_HOSTS = ["smartlink-production-6c66.up.railway.app"];
 
-  function getSelectedText() {
+  function captureSelection() {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return null;
     const text = selection.toString().trim();
-    return text.length > 0 ? { text, selection } : null;
+    if (text.length === 0) return null;
+    // Clone the range now: clicking a picker option later collapses the
+    // live document selection, so we can't rely on it still being there.
+    return { text, range: selection.getRangeAt(0).cloneRange() };
   }
 
   function showToast(message, type = "info") {
@@ -124,10 +127,7 @@
     return res.json();
   }
 
-  function replaceSelectionWithLink(selection, text, linkedinUrl) {
-    if (selection.rangeCount === 0) return false;
-
-    const range = selection.getRangeAt(0);
+  function replaceRangeWithLink(range, text, linkedinUrl) {
     const anchor = document.createElement("a");
     anchor.href = linkedinUrl;
     anchor.textContent = text;
@@ -137,7 +137,6 @@
     try {
       range.deleteContents();
       range.insertNode(anchor);
-      selection.removeAllRanges();
       return true;
     } catch {
       return false;
@@ -145,13 +144,13 @@
   }
 
   async function handleTrigger() {
-    const selected = getSelectedText();
+    const selected = captureSelection();
     if (!selected) {
       showToast("Select a name first, then use the shortcut.", "error");
       return;
     }
 
-    const { text, selection } = selected;
+    const { text, range } = selected;
 
     showToast("Looking up…");
 
@@ -175,7 +174,7 @@
     if (results.length === 1) {
       const r = results[0];
       const isDrive = r.source === "Google Drive";
-      const ok = replaceSelectionWithLink(selection, text, r.linkedinUrl);
+      const ok = replaceRangeWithLink(range, text, r.linkedinUrl);
       if (ok) {
         showToast(isDrive ? `Linked to ${r.name}.` : `Linked to ${r.name}'s LinkedIn.`, "success");
       } else {
@@ -188,7 +187,7 @@
     // Multiple matches — show picker
     showPicker(results, (linkedinUrl, result) => {
       const isDrive = result?.source === "Google Drive";
-      const ok = replaceSelectionWithLink(selection, text, linkedinUrl);
+      const ok = replaceRangeWithLink(range, text, linkedinUrl);
       if (ok) {
         showToast(isDrive ? "Document linked." : "LinkedIn linked.", "success");
       } else {

@@ -15,11 +15,17 @@ function loadColleagues() {
   }
 }
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function searchColleagues(name) {
   const colleagues = loadColleagues();
-  const query = name.toLowerCase();
+  const query = name.trim();
+  if (!query) return [];
+  const pattern = new RegExp(`\\b${escapeRegex(query)}`, "i");
   return colleagues
-    .filter((c) => c.name.toLowerCase().includes(query))
+    .filter((c) => pattern.test(c.name))
     .map((c) => ({
       name: c.name,
       linkedinUrl: c.linkedinUrl,

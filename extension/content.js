@@ -1,6 +1,112 @@
 (() => {
   const BACKEND_URL = "https://smartlink-backend-flip-cx.vercel.app";
   const OLD_BACKEND_HOSTS = ["smartlink-production-6c66.up.railway.app"];
+  const IS_GOOGLE_DOC = location.hostname === "docs.google.com" && location.pathname.startsWith("/document/");
+
+  // Google Docs draws text on a canvas, so the page's Selection API is empty.
+  // Its keyboard/clipboard input goes through a hidden iframe instead, so we
+  // talk to Docs by dispatching copy/paste events into that iframe.
+  function getDocsEventTarget() {
+    const iframe = document.querySelector("iframe.docs-texteventtarget-iframe");
+    const doc = iframe?.contentDocument;
+    if (!doc) return null;
+    return doc.querySelector('[contenteditable="true"]') || doc.body;
+  }
+
+  function readDocsSelection() {
+    const target = getDocsEventTarget();
+    if (!target) return null;
+    const data = new DataTransfer();
+    target.dispatchEvent(new ClipboardEvent("copy", { clipboardData: data, bubbles: true, cancelable: true }));
+    return data.getData("text/plain").trim() || null;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  }
+
+  function linkHtml(text, url) {
+    return `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`;
+  }
+
+  function pasteLinkIntoDocs(text, url) {
+    const target = getDocsEventTarget();
+    if (!target) return false;
+    target.ownerDocument.defaultView.focus();
+    target.focus();
+    const data = new DataTransfer();
+    data.setData("text/html", linkHtml(text, url));
+    data.setData("text/plain", text);
+    // Docs calls preventDefault() when it consumes a paste, so a cancelled
+    // event means the link went in.
+    return !target.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+  }
+
+  async function copyLinkToClipboard(text, url) {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([linkHtml(text, url)], { type: "text/html" }),
+          "text/plain": new Blob([url], { type: "text/plain" }),
+        }),
+      ]);
+    } catch {
+      await navigator.clipboard.writeText(url).catch(() => {});
+    }
+  }
+
+  // Fallback when Docs won't hand us the selected text: ask for the name.
+  function promptForName() {
+    return new Promise((resolve) => {
+      document.getElementById("smartlink-prompt")?.remove();
+
+      const box = document.createElement("div");
+      box.id = "smartlink-prompt";
+      Object.assign(box.style, {
+        position: "fixed",
+        bottom: "70px",
+        right: "24px",
+        zIndex: "99999",
+        background: "#fff",
+        border: "1px solid #dadce0",
+        borderRadius: "8px",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+        fontFamily: "Google Sans, Roboto, sans-serif",
+        fontSize: "13px",
+        padding: "10px 14px",
+        minWidth: "260px",
+      });
+
+      const label = document.createElement("div");
+      label.textContent = "Name to link (Enter to search, Esc to cancel):";
+      Object.assign(label.style, { fontWeight: "600", color: "#202124", marginBottom: "8px" });
+
+      const input = document.createElement("input");
+      input.type = "text";
+      Object.assign(input.style, {
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "6px 8px",
+        border: "1px solid #dadce0",
+        borderRadius: "4px",
+        fontSize: "13px",
+      });
+
+      const done = (value) => {
+        box.remove();
+        resolve(value);
+      };
+      input.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") done(input.value.trim() || null);
+        if (e.key === "Escape") done(null);
+      });
+
+      box.append(label, input);
+      document.body.appendChild(box);
+      input.focus();
+    });
+  }
 
   function captureSelection() {
     const selection = window.getSelection();
@@ -143,14 +249,34 @@
     }
   }
 
-  async function handleTrigger() {
+  async function captureTarget() {
+    if (IS_GOOGLE_DOC) {
+      const text = readDocsSelection() || (await promptForName());
+      return text ? { text, link: (url) => pasteLinkIntoDocs(text, url) } : null;
+    }
     const selected = captureSelection();
-    if (!selected) {
-      showToast("Select a name first, then use the shortcut.", "error");
+    if (!selected) return null;
+    const { text, range } = selected;
+    return { text, link: (url) => replaceRangeWithLink(range, text, url) };
+  }
+
+  async function applyLink(target, url, linkedMsg, copiedMsg) {
+    if (target.link(url)) {
+      showToast(linkedMsg, "success");
+      return;
+    }
+    await copyLinkToClipboard(target.text, url);
+    showToast(IS_GOOGLE_DOC ? "Link copied. Press ⌘V to paste it over the name." : copiedMsg, "success");
+  }
+
+  async function handleTrigger() {
+    const target = await captureTarget();
+    if (!target) {
+      if (!IS_GOOGLE_DOC) showToast("Select a name first, then use the shortcut.", "error");
       return;
     }
 
-    const { text, range } = selected;
+    const { text } = target;
 
     showToast("Looking up…");
 
@@ -174,26 +300,24 @@
     if (results.length === 1) {
       const r = results[0];
       const isDrive = r.source === "Google Drive";
-      const ok = replaceRangeWithLink(range, text, r.linkedinUrl);
-      if (ok) {
-        showToast(isDrive ? `Linked to ${r.name}.` : `Linked to ${r.name}'s LinkedIn.`, "success");
-      } else {
-        navigator.clipboard.writeText(r.linkedinUrl);
-        showToast(isDrive ? `${r.name} link copied to clipboard.` : `${r.name}'s LinkedIn copied to clipboard.`, "success");
-      }
+      await applyLink(
+        target,
+        r.linkedinUrl,
+        isDrive ? `Linked to ${r.name}.` : `Linked to ${r.name}'s LinkedIn.`,
+        isDrive ? `${r.name} link copied to clipboard.` : `${r.name}'s LinkedIn copied to clipboard.`,
+      );
       return;
     }
 
     // Multiple matches — show picker
     showPicker(results, (linkedinUrl, result) => {
       const isDrive = result?.source === "Google Drive";
-      const ok = replaceRangeWithLink(range, text, linkedinUrl);
-      if (ok) {
-        showToast(isDrive ? "Document linked." : "LinkedIn linked.", "success");
-      } else {
-        navigator.clipboard.writeText(linkedinUrl);
-        showToast(isDrive ? "Document link copied to clipboard." : "LinkedIn URL copied to clipboard.", "success");
-      }
+      applyLink(
+        target,
+        linkedinUrl,
+        isDrive ? "Document linked." : "LinkedIn linked.",
+        isDrive ? "Document link copied to clipboard." : "LinkedIn URL copied to clipboard.",
+      );
     });
   }
 

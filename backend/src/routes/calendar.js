@@ -48,10 +48,26 @@ export async function getAccessToken() {
   return refreshAccessToken(tokens.refresh_token);
 }
 
+const PLACEHOLDER_HANDLES = new Set(["none", "na", "null", "nil", "no", "tbd"]);
+
+// Booking forms ask "Your LinkedIn URL" and candidates often type just a
+// handle ("/cdurscher", "in/cdurscher", "linkedin.com/cdurscher").
+function extractLinkedInFromFormField(text) {
+  const plain = text.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+  const match = plain.match(/linkedin[^\n]*\n[ \t]*([^\n]+)/i);
+  if (!match) return null;
+  const handle = match[1]
+    .trim()
+    .replace(/^(https?:\/\/)?(www\.)?(linkedin\.com)?\/?(in\/)?/i, "")
+    .split(/[/?#\s]/)[0];
+  if (!/^[A-Za-z0-9\-_%]{3,100}$/.test(handle) || PLACEHOLDER_HANDLES.has(handle.toLowerCase())) return null;
+  return `https://www.linkedin.com/in/${handle}/`;
+}
+
 function extractLinkedIn(text) {
   if (!text) return null;
   const match = text.match(/(https?:\/\/)?(www\.)?linkedin\.com\/in\/[^\s\n\r"'<>]+/i);
-  if (!match) return null;
+  if (!match) return extractLinkedInFromFormField(text);
   const url = match[0].replace(/[.,;)]+$/, "");
   return url.startsWith("http") ? url : `https://${url}`;
 }
